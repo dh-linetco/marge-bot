@@ -96,7 +96,7 @@ class MergeJob:
         # add Tested-by
         should_add_tested = (
             self._options.add_tested and
-            self._project.only_allow_merge_if_pipeline_succeeds and
+            (self._options.wait_for_ci or self._project.only_allow_merge_if_pipeline_succeeds) and
             self._options.fusion is Fusion.rebase
         )
 
@@ -453,6 +453,7 @@ JOB_OPTIONS = [
     'use_no_ff_batches',
     'use_merge_commit_batches',
     'skip_ci_batches',
+    'wait_for_ci',
 ]
 
 
@@ -468,7 +469,7 @@ class MergeJobOptions(namedtuple('MergeJobOptions', JOB_OPTIONS)):
             cls, *,
             add_tested=False, add_part_of=False, add_reviewers=False, reapprove=False,
             approval_timeout=None, embargo=None, ci_timeout=None, fusion=Fusion.rebase,
-            use_no_ff_batches=False, use_merge_commit_batches=False, skip_ci_batches=False,
+            use_no_ff_batches=False, use_merge_commit_batches=False, skip_ci_batches=False, wait_for_ci=False
     ):
         approval_timeout = approval_timeout or timedelta(seconds=0)
         embargo = embargo or IntervalUnion.empty()
@@ -485,6 +486,7 @@ class MergeJobOptions(namedtuple('MergeJobOptions', JOB_OPTIONS)):
             use_no_ff_batches=use_no_ff_batches,
             use_merge_commit_batches=use_merge_commit_batches,
             skip_ci_batches=skip_ci_batches,
+            wait_for_ci=wait_for_ci,
         )
 
 

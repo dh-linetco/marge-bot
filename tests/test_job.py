@@ -203,6 +203,7 @@ class TestMergeJobOptions:
             use_no_ff_batches=False,
             use_merge_commit_batches=False,
             skip_ci_batches=False,
+            wait_for_ci=False,
         )
 
     def test_default_ci_time(self):

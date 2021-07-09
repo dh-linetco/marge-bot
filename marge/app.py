@@ -32,7 +32,7 @@ def time_interval(str_interval):
         ) from err
 
 
-def _parse_config(args):
+def _setup_parser():
 
     def regexp(str_regex):
         try:
@@ -237,6 +237,17 @@ def _parse_config(args):
         action='store_true',
         help='Run marge-bot as a single CLI command, not a service'
     )
+    parser.add_argument(
+        '--wait-for-ci',
+        action='store_true',
+        help='Always wait for the ci'
+    )
+    return parser
+
+
+def _parse_config(args):
+
+    parser = _setup_parser()
     config = parser.parse_args(args)
 
     if config.use_merge_strategy and config.batch:
@@ -342,6 +353,7 @@ def main(args=None):
                 use_no_ff_batches=options.use_no_ff_batches,
                 use_merge_commit_batches=options.use_merge_commit_batches,
                 skip_ci_batches=options.skip_ci_batches,
+                wait_for_ci=options.wait_for_ci,
             ),
             batch=options.batch,
             cli=options.cli,

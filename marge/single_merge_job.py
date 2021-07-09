@@ -48,7 +48,6 @@ class SingleMergeJob(MergeJob):
         while not updated_into_up_to_date_target_branch:
             self.ensure_mergeable_mr(merge_request)
             source_project, source_repo_url, _ = self.fetch_source_project(merge_request)
-            target_project = self.get_target_project(merge_request)
             try:
                 # NB. this will be a no-op if there is nothing to update/rewrite
 
@@ -73,7 +72,7 @@ class SingleMergeJob(MergeJob):
 
             self.maybe_reapprove(merge_request, approvals)
 
-            if target_project.only_allow_merge_if_pipeline_succeeds:
+            if self._options.wait_for_ci or self._project.only_allow_merge_if_pipeline_succeeds:
                 self.wait_for_ci_to_pass(merge_request, actual_sha)
                 time.sleep(2)
 
@@ -85,7 +84,8 @@ class SingleMergeJob(MergeJob):
                 ret = merge_request.accept(
                     remove_branch=merge_request.force_remove_source_branch,
                     sha=actual_sha,
-                    merge_when_pipeline_succeeds=bool(target_project.only_allow_merge_if_pipeline_succeeds),
+                    merge_when_pipeline_succeeds=(self._options.wait_for_ci or
+                                                  self._project.only_allow_merge_if_pipeline_succeeds),
                 )
                 log.info('merge_request.accept result: %s', ret)
             except gitlab.NotAcceptable as err:

@@ -73,7 +73,7 @@ class BatchMergeJob(MergeJob):
     def ensure_mergeable_mr(self, merge_request, skip_ci=False):
         super().ensure_mergeable_mr(merge_request)
 
-        if self._project.only_allow_merge_if_pipeline_succeeds and not skip_ci:
+        if (self._options.wait_for_ci or self._project.only_allow_merge_if_pipeline_succeeds) and not skip_ci:
             ci_status = self.get_mr_ci_status(merge_request)
             if ci_status != 'success':
                 raise CannotBatch('This MR has not passed CI.')
@@ -113,9 +113,9 @@ class BatchMergeJob(MergeJob):
     def merge_batch(self, target_branch, source_branch, no_ff=False):
         if no_ff:
             return self._repo.merge(
-                    target_branch,
-                    source_branch,
-                    '--no-ff',
+                target_branch,
+                source_branch,
+                '--no-ff',
             )
 
         return self._repo.fast_forward(
@@ -124,9 +124,9 @@ class BatchMergeJob(MergeJob):
         )
 
     def update_merge_request(
-        self,
-        merge_request,
-        source_repo_url=None,
+            self,
+            merge_request,
+            source_repo_url=None,
     ):
         log.info('Fusing MR !%s', merge_request.iid)
         approvals = merge_request.fetch_approvals()
@@ -154,10 +154,10 @@ class BatchMergeJob(MergeJob):
         return sha_now
 
     def accept_mr(
-        self,
-        merge_request,
-        expected_remote_target_branch_sha,
-        source_repo_url=None,
+            self,
+            merge_request,
+            expected_remote_target_branch_sha,
+            source_repo_url=None,
     ):
         log.info('Accept MR !%s', merge_request.iid)
 
@@ -291,7 +291,7 @@ class BatchMergeJob(MergeJob):
             merge_request.comment('I will attempt to batch this MR (!{})...'.format(batch_mr.iid))
 
         # wait for the CI of the batch MR
-        if self._project.only_allow_merge_if_pipeline_succeeds:
+        if self._options.wait_for_ci or self._project.only_allow_merge_if_pipeline_succeeds:
             try:
                 self.wait_for_ci_to_pass(batch_mr, commit_sha=batch_mr_sha)
             except CannotMerge as err:
@@ -349,7 +349,8 @@ class BatchMergeJob(MergeJob):
                 ret = batch_mr.accept(
                     remove_branch=batch_mr.force_remove_source_branch,
                     sha=batch_mr_sha,
-                    merge_when_pipeline_succeeds=bool(self._project.only_allow_merge_if_pipeline_succeeds),
+                    merge_when_pipeline_succeeds=(self._options.wait_for_ci or
+                                                  self._project.only_allow_merge_if_pipeline_succeeds),
                 )
                 log.info('batch_mr.accept result: %s', ret)
             except gitlab.ApiError as err:
